@@ -50,7 +50,7 @@ get_v_json() {
     done
     } | sed 's/^[0-3]/false\t\t/; s/^[4-9]/true\t\t/; s/\t\t.*<img class="lazy commentAvatarImg avatarTrigger" data-src="\([^"]*\)" [^>]* title="\([^"]*\)" *\/> */\t\1\t\2\tfalse\t\t/; s/\tfalse\t\t<span class="bg-sprite-icons-profile verified-icon flag tooltipTrig" data-title="Verified Member"><\/span> */\ttrue\t\t/; s/\t\t.*<div class="usernameWrap clearfix" data-type="user" data-userid="\([0-9]*\)".*<div class="date"> *\([^<]*[a-zA-Z0-9.-]\) *<.*class="commentMessage"> *<span>\(.*\)<\/span>.*<span class="[^"]* thumbsUpVote[^"]*">\([0-9]*\)<.*/\t\1\t\2\t\3\t\4/'
     } | jq -RnMcs '
-        (inputs | split("\n"))[:-1] as $lines | 
+        (inputs | split("\n"))[:-1] as $lines |
         .["id"]=$lines[0] |
         .["date"]=$lines[1] |
         .["author"]=$lines[2] |
@@ -69,7 +69,7 @@ get_v_json() {
         .["categories"]=($lines[15] | split("\t")) |
         .["tags"]=($lines[16] | split("\t")) |
         .["attributes"]=($lines[17] | split("\t")) |
-        .["production"]=($lines[18] | split("\t")) | 
+        .["production"]=($lines[18] | split("\t")) |
         .["comments"]=($lines[19:] | map(split("\t") | {
             ("name"):.[2],
             ("userid"):.[4],
@@ -90,7 +90,7 @@ get_v_json() {
                 else
                     if ($l[0] | test("Yesterday")) then now-86400
                     else now end
-                end) | todate 
+                end) | todate
             ),
             ("message"):.[6],
             ("likes"):.[7]
@@ -181,7 +181,7 @@ get_P_json() {
     done
     } | sed 's/^[0-3]/false\t\t/; s/^[4-9]/true\t\t/; s/\t\t.*<img class="lazy commentAvatarImg avatarTrigger" data-src="\([^"]*\)" [^>]* title="\([^"]*\)" *\/> */\t\1\t\2\tfalse\t\t/; s/\tfalse\t\t<span class="bg-sprite-icons-profile verified-icon flag tooltipTrig" data-title="Verified Member"><\/span> */\ttrue\t\t/; s/\t\t.*<div class="usernameWrap clearfix" data-type="user" data-userid="\([0-9]*\)".*<div class="date"> *\([^<]*[a-zA-Z0-9.-]\) *<.*class="commentMessage"> *<span>\(.*\)<\/span>.*<span class="[^"]* thumbsUpVote[^"]*">\([0-9]*\)<.*/\t\1\t\2\t\3\t\4/'
     } | jq -RnMcs '
-        (inputs | split("\n"))[:-1] as $lines | 
+        (inputs | split("\n"))[:-1] as $lines |
         .["title"]=$lines[0] |
         .["desc"]=($lines[1] | split("\t") | join("\n")) |
         .["user_id"]=$lines[2] |
@@ -198,8 +198,6 @@ get_P_json() {
                 split("\t") | {("name"):.[2],("userid"):.[4],("verified"):.[3],("avatar"):.[1],("nested"):.[0],("date"):((.[5] | split(" ")) as $l | ($l[0] | tonumber) as $n | (if ($l[1] | test("minut")) then now-($n*60) elif ($l[1] | test("hour")) then now-($n*3600) elif ($l[1] | test("day")) then now-($n*86400) elif ($l[1] | test("week")) then now-($n*604800) elif ($l[1] | test("month")) then now-($n*2635200) elif ($l[1] | test("year")) then now-($n*31557600) else (now-$n) end) | todate ),("message"):.[6],("likes"):.[7]})
                 )'
 }
-
-get_v_json "https://www.pornhub.com/view_video.php?viewkey=647fffcd64151" > ja; exit
 
 if [ "$#" -lt '2' ]
 then
