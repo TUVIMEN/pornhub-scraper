@@ -8,7 +8,7 @@ A bash script for downloading pornhub in json.
  - [jq](https://github.com/stedolan/jq)
 
 ## Installation
-    
+
     install -m 755 pornhub /usr/bin
 
 ## Json format
@@ -25,9 +25,9 @@ Download pornstars into DIR
 
     pornhub -p DIR
 
-Download videos into DIR
+Download videos into current directory using 8 threads
 
-    pornhub -v DIR
+    pornhub -t 8 -v
 
 Download models into DIR
 

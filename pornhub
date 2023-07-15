@@ -6,16 +6,21 @@ ucurl() {
     curl -L -g -s --user-agent 'Mozilla/5.0 (X11; Linux x86_64) AppleWebKit/537.36 (KHTML, like Gecko) QtWebEngine/5.15.2 Chrome/87.0.4280.144 Safari/537.36' -H 'Accept-Encoding: gzip, deflate' --compressed -H 'Cookie: atatusScript=hide; accessAgeDisclaimerPH=1' "$@"
 }
 
-declare -r threads='4'
+declare threads='4' dir='.' cookie_t
 declare -r arg0="$(basename "$0")"
 
 usage() {
-    printf '%s [OPTION] [DIR]\n\n' "$(basename "$0")"
-    printf "  -p\tpornstars\n"
-    printf "  -v\tvideos\n"
-    printf "  -m\tmodels\n"
-    printf "  -P\tplaylists\n"
-    printf "  -h\tshow help\n"
+    printf '%s [OPTION...] [DIR]\n' "$(basename "$0")"
+    printf "Download, convert to json and save pornhub pages from its sitemap.\n"
+    printf "Type of page depends on [-pvmP] options.\n"
+    printf "Pages will be saved in files named by their sha256 hash of urls and placed in DIR.\n\n"
+    printf "Options:\n"
+    printf "  -t NUM\tset number of used threads, by default set to 4\n"
+    printf "  -p\t\tpornstars\n"
+    printf "  -v\t\tvideos\n"
+    printf "  -m\t\tmodels\n"
+    printf "  -P\t\tplaylists\n"
+    printf "  -h\t\tshow help\n"
 }
 
 get_v_json() {
@@ -199,25 +204,28 @@ get_P_json() {
                 )'
 }
 
-if [ "$#" -lt '2' ]
-then
-    usage >&2
-    exit 1
-fi
+[ "$#" -eq '0' ] && { usage >&2; exit 1; }
 
-case "$1" in
-    -p) pattern='pornstars'; func='get_p_json';;
-    -v) pattern='g_vids'; func='get_v_json';;
-    -m) pattern='models'; func='get_p_json';;
-    -P) pattern='playlists'; func='get_P_json';;
-    -h) usage; exit 0;;
-    *) printf '%s: invalid argument -- %s\n' "$(basename "$0")" "$1" >&2; exit 1;;
-esac
+while [ "$#" -gt 0 ]
+do
+    case "$1" in
+        -t) threads="$2"; shift;;
+        -p) pattern='pornstars'; func='get_p_json';;
+        -v) pattern='g_vids'; func='get_v_json';;
+        -m) pattern='models'; func='get_p_json';;
+        -P) pattern='playlists'; func='get_P_json';;
+        -h) usage; exit 0;;
+        -*) printf '%s: invalid argument -- %s\n' "$(basename "$0")" "$1" >&2; exit 1;;
+        *) dir="$1";;
+    esac
+    shift
+done
 
-cd "$2" || exit 1
+[ -z "$pattern" ] && { printf '%s: No option specified the type of pages\n' "$(basename "$0")" >&2; exit 1; }
+cd "$dir" || exit 1
 
 cookie_t="$(mktemp)"
-trap 'rm "$cookie_t"' EXIT
+trap 'rm "$cookie_t"; exit' EXIT
 
 for i in $(ucurl 'https://www.pornhub.com/sitemaps.xml' | hgrep 'loc @m"/sitemap_'"$pattern"'[0-9]*\.xml" @p"%i\n"')
 do
