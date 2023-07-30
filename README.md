@@ -13,7 +13,7 @@ A bash script for downloading pornhub in json.
 
 ## Json format
 
-Here's example of [pornstar](pornstar-example.json), [video](video-example.json), [model](model-example.json) and [playlist](playlist-example.json).
+Here's example of [pornstar](pornstar-example.json), [video](video-example.json), [model](model-example.json), [playlist](playlist-example.json) and [user](user-example.json).
 
 ## Usage
 
@@ -29,13 +29,17 @@ Download videos into current directory using 8 threads
 
     pornhub -t 8 -v
 
-Download models into DIR
+Download models into current directory
 
-    pornhub -m DIR
+    pornhub -m
 
 Download playlists into DIR
 
     pornhub -P DIR
+
+Download user
+
+    pornhub -u 'https://www.pornhub.com/users/truelezbi'
 
 Get some help
 
