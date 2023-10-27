@@ -72,7 +72,7 @@ get_comments() {
     t="$(hgrep 'div +id="cmtContent" @p"%i\n"' < /dev/stdin)"
 
     {
-    hgrep 'div +class="topCommentBlock clearfix" @p "%l%A,\n"' <<< "$t"
+    hgrep -F 'div +class="topCommentBlock clearfix" @p "%l%A,\n"' <<< "$t"
 
     while :
     do
@@ -138,42 +138,39 @@ get_achievements() {
 }
 
 pages_button() {
-    local last current='1' t="$(ucurl "$1" | tr -d '\n\t\r')" sort
+    local last current='1' t="$(ucurl "$1" | tr -d '\n\t\r')" sort command="$(</dev/stdin)"
     last="$(hgrep 'button +id=moreDataBtn +onclick @p"%(onclick)a\n"' <<< "$t" | sed "s/.*('[^']*', '//;s/',.*//")"
     [ -z "$last" ] && last='1'
 
-    [ "$#" -gt '1' ] && sort="o=$2&"
+    [ "$#" -gt '2' ] && sort="o=$3&"
     
-    hgrep 'ul +id=moreData @p"%i\n"' <<< "$t"
+    t="$(hgrep -F 'ul +id=moreData @p"%i\n"' <<< "$t")"
     while :
     do
+        eval "$command"
         ((current++))
         [ "$current" -gt "$last" ] && break
-        ucurl -b "$cookie_t" -X POST -H 'X-Requested-With: XMLHttpRequest' "$1/ajax?${sort}page=$current" | tr -d '\n\t\r'
+        t="$(ucurl -b "$cookie_t" -X POST -H 'X-Requested-With: XMLHttpRequest' "$1/ajax?${sort}page=$current" | tr -d '\n\t\r')"
     done
 }
 
 get_users() {
-    local -r t="$(pages_button "$@")"
-    paste -d '"' \
-        <(hgrep 'div +data-type=user +data-userid @m"class=\"usernameLink\"" @p"%(data-userid)a\n"' <<< "$t") \
-        <(hgrep 'a +class="usernameLink" +title @p"%(title)a\n"' <<< "$t") \
-        <(hgrep 'a +class="usernameLink" +href @p"%(href)a\n"' <<< "$t") | paste -sd '\t' #id name link
+    echo 'paste -d '\''"'\'' <(hgrep -F '\''div +data-type=user +data-userid @m"class=\"usernameLink\"" @p"%(data-userid)a\n"'\'' <<< "$t") <(hgrep -F '\''a +class="usernameLink" +title @p"%(title)a\n"'\'' <<< "$t") <(hgrep -F '\''a +class="usernameLink" +href @p"%(href)a\n"'\'' <<< "$t") ' | pages_button "$@" | paste -sd '\t' #id name link
 }
 
 get_channels() {
-    pages_button "$@" | hgrep 'div +class=wtitle; a +href @p"%(href)a\"%i\t"' #link name
+    echo 'hgrep -F '\''div +class=wtitle; a +href @p"%(href)a\"%i\t"'\'' <<< "$t"' | pages_button "$@" #link name
 }
 
 get_pornstars() { #jq_channels
-    pages_button "$@" | hgrep 'a +data-mxptype=Pornstar +data-mxptext +href @M"<img" @p"%(href)a\"%(data-mxptext)a\t"' #link name
+    echo 'hgrep -F '\''a +data-mxptype=Pornstar +data-mxptext +href @M"<img" @p"%(href)a\"%(data-mxptext)a\t"'\'' <<< "$t"' | pages_button "$@" #link name
 }
 
 get_gifphotos() {
     for i in $(ucurl -b "$cookie_t" "$1" | tr -d '\n\t\r' | hgrep 'div +class="section_header\( .*\)*"; a -class="seeAllButton\( .*\)*" +href=".*" @p"https://www.pornhub.com%(href)a\n"')
     do
         printf '%s"' "$(sed 's/.*\///' <<< "$i")"
-        pages_button "$i" | sed 's#/gif/#g#g;s#/photo/#p#g;s#/album/#a#g' | hgrep 'li +id; a +href @p"%(href)a,"'
+        echo 'sed '\''s#/gif/#g#g;s#/photo/#p#g;s#/album/#a#g'\'' <<< "$t" | hgrep -F '\''li +id; a +href @p"%(href)a,"'\''' | pages_button "$i"
         echo
     done | paste -sd '\t'
 }
@@ -182,7 +179,7 @@ get_videos() { #jq_gifphotos
     for i in $(ucurl -b "$cookie_t" "$1" | tr -d '\n\t\r' | hgrep 'div +class="section_header\( .*\)*"; a -class="seeAllButton\( .*\)*" -data-title +href=".*" @p"https://www.pornhub.com%(href)a\n"')
     do
         printf '%s"' "$(sed 's/.*\///' <<< "$i")"
-        pages_button "$i" | sed 's/\/view_video.php?viewkey=//g' | hgrep 'li +id; .* +class="title"; a +title +href @p"%(href)a,"'
+        echo 'sed '\''s/\/view_video.php?viewkey=//g'\'' <<< "$t" | hgrep -F '\''li +id; .* +class="title"; a +title +href @p"%(href)a,"'\''' | pages_button "$i"
         echo
     done | paste -sd '\t'
 }
