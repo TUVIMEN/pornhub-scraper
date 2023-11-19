@@ -21,6 +21,8 @@ Here's example of [pornstar](pornstar-example.json), [video](video-example.json)
 
 The script gets links from sitemap and downloads specified pages (4 in parallel). Files are named by sha256sum of their urls.
 
+It's recommended that you use -S option to save time.
+
 Download pornstars into DIR
 
     pornhub -p DIR
@@ -37,9 +39,9 @@ Download playlists into DIR
 
     pornhub -P DIR
 
-Download user
+Download users from urls in FILE
 
-    pornhub -u 'https://www.pornhub.com/users/truelezbi'
+    pornhub -u FILE
 
 Get some help
 
