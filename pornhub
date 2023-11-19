@@ -8,6 +8,7 @@ ucurl() {
 
 declare threads='4' dir='.' cookie_t
 declare -r arg0="$(basename "$0")"
+declare NOCOMMENTS='0' NOSOCIAL='0'
 
 usage() {
     printf '%s [OPTION...] [DIR]\n' "$(basename "$0")"
@@ -21,6 +22,8 @@ usage() {
     printf "  -m\t\tmodels\n"
     printf "  -P\t\tplaylists\n"
     printf "  -u FILE\tget users from urls in FILE\n"
+    printf "  -C\t\tdo not seek comments\n"
+    printf "  -S\t\tdo not seek social things like: subscribers, subscriptions, friends\n"
     printf "  -h\t\tshow help\n"
 }
 
@@ -68,6 +71,7 @@ declare jq_gifphotos='split("\t") | map(split("\"") | {
 
 get_comments() {
     local t url page view_responses='-data-comment-key'
+    [ "$NOCOMMENTS" -eq '1' ] && { echo; return; }
 
     t="$(hgrep 'div +id="cmtContent" @p"%i\n"' < /dev/stdin)"
 
@@ -87,10 +91,9 @@ get_comments() {
         t="$(ucurl -L -b "$cookie_t" "$url" | tr -d '\t\n\r')"
         hgrep 'div +class="topCommentBlock clearfix" @p "%l%A,\n"' <<< "$t"
     done
-    } | sed '/<div class="date">\[\[dateAdd\]\]<\/div>/d;
-    s/^[0-2]/false\t\t/;
-    s/^[3-9]\+/true\t\t/;
-    s/\t\t.*<img class="[^"]*" data-src="\([^"]*\)" [^>]* title="\([^"]*\)" *\/> */\t\1\t\2\tfalse\t\t/;
+    } | sed '/<div class="date">\[\[dateAdd\]\]<\/div>/d; s/^[0-2][^0-9]/false\t\t~~\t\t/;
+    s/^[3-9][0-9]*/true\t\t~~\t\t/;
+    s/\t\t~~\t\t.*<img class="[^"]*" [A-Za-z-]*src="\([^"]*\)" [^>]* title="\([^"]*\)" *\/> */\t\1\t\2\tfalse\t\t/;
     s/\tfalse\t\t<span class="bg-sprite-icons-profile verified-icon flag tooltipTrig" data-title="Verified Member"><\/span> */\ttrue\t\t/;
     s/\t\t.*<div class="usernameWrap clearfix" data-type="user" data-userid="\([0-9]*\)".*\(data-label="Profile View" rel="[^"]*" href="\([^"]\+\)".*\|<span class="geoBlocked\).*<div class="date\( .*\)*"> *\([^<]*[a-zA-Z0-9.-]\) *<.*class="commentMessage"> *<span>\(.*\)<\/span>.*<span class="[^"]* thumbsUpVote\([0-9]\+\) [^"]*">\([0-9]*\)<.*>\([0-9,]\+\)$/\t\1\t\3\t\5\t\6\t\7\t\8\t\9/' | awk -F '\t' '
     {
@@ -278,7 +281,7 @@ get_p_json() {
     [ -z "$_tmp1" ] && _tmp1="$(hgrep 'div +class="infoBox"; span -class @m"[0-9]" @p"%i\n"' <<< "$t")"
     echo "${_tmp1//[^0-9]/}" #subscribers_count
     echo "$(hgrep 'div +class="rankingInfo"; span +class="big" @p"%i\n"' <<< "$t" | sed 's/ //g; s/<[^>]*>//g')" #current_rank #weekly_rank #monthly_rank #last_month_rank #yearly_rank
-    echo "$(hgrep 'div +class="infoPiece" @p"%i\n""' <<< "$t" | sed 's/<[^>]*>/\n/g; s/  */ /g' | sed 's/^ *//; s/ *$//; /^$/d' | sed ':x; $!{N;s/:\n/\a/; s/  */ /g; N; s/\n/\t/; bx}')" #info_pieces
+    echo "$(hgrep 'div +class="infoPiece" @p"%i\n"' <<< "$t" | sed 's/<[^>]*>/\n/g; s/  */ /g' | sed 's/^ *//; s/ *$//; /^$/d' | sed ':x; $!{N;s/:\n/\a/; s/  */ /g; N; s/\n/\t/; bx}')" #info_pieces
     echo "$(hgrep 'ul +class="\(.* \)*socialList\( .*\)*"; a +href @p"%(href)a\t"' <<< "$t")" #social
     _tmp1="$(hgrep 'div +itemprop="description" @p"%i\n"' <<< "$t")"
     [ -z "$_tmp1" ] && _tmp1="$(hgrep 'div +class="text longBio js-bioText" @p"%i\n"' <<< "$t")"
@@ -294,7 +297,7 @@ get_p_json() {
         for i in 'achievements`achievements`all-achievements``' 'subscribers`users`subscribers`recent_subscribers`' 'subscriptions`users`subscriptions`recent_subscribers`' 'pornstar-subscriptions`pornstars`pornstar-subscriptions`recent_subscribers`' 'channel-subscriptions`channels``recent_subscribers`' 'friends`users`friends`recent_friendships`' 'costars`costars`costars``'
         do
             mapfile -t -d '`' a <<< "$i"
-            if [ -n "$(hgrep 'div +class=sectionHeader; a -class=seeAll +href=".*/'"${a[0]}"'" @p"%l\n"' <<< "$t2")" ]
+            if [ "$NOSOCIAL" -ne "1" -a -n "$(hgrep 'div +class=sectionHeader; a -class=seeAll +href=".*/'"${a[0]}"'" @p"%l\n"' <<< "$t2")" ]
             then
                 echo "$(get_${a[1]} "$1/${a[2]}" "${a[3]}")"
             else
@@ -314,7 +317,7 @@ get_p_json() {
         printf '\n\n'
     fi #gifs photos
 
-    if [ -n "$(hgrep 'li +id="\(pornstar\|profile\)Photos" @m">Comments<" @p"%l\n"' <<< "$t")" ]
+    if [ "$NOCOMMENTS" -ne '1' -a -n "$(hgrep 'li +id="\(pornstar\|profile\)Photos" @m">Comments<" @p"%l\n"' <<< "$t")" ]
     then
         echo "$(ucurl -b "$cookie_t" "$1/comments" | tr -d '\n\t\r' | get_comments)"
     else
@@ -456,6 +459,8 @@ do
         -m) pattern='models'; func='get_p_json';;
         -P) pattern='playlists'; func='get_P_json';;
         -u) pattern="$(realpath "$2")"; func='get_u_json'; shift;;
+        -C) NOCOMMENTS='1';;
+        -S) NOSOCIAL='1';;
         -h) usage; exit 0;;
         -*) printf '%s: invalid argument -- %s\n' "$(basename "$0")" "$1" >&2; exit 1;;
         *) dir="$1";;
