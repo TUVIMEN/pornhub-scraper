@@ -12,7 +12,7 @@ declare -r arg0="$(basename "$0")"
 usage() {
     printf '%s [OPTION...] [DIR]\n' "$(basename "$0")"
     printf "Download, convert to json and save pornhub pages from its sitemap.\n"
-    printf "Type of page depends on [-pvmP] options.\n"
+    printf "Type of page depends on [-pvmPu] options.\n"
     printf "Pages will be saved in files named by their sha256 hash of urls and placed in DIR.\n\n"
     printf "Options:\n"
     printf "  -t NUM\tset number of used threads, by default set to 4\n"
@@ -20,7 +20,7 @@ usage() {
     printf "  -v\t\tvideos\n"
     printf "  -m\t\tmodels\n"
     printf "  -P\t\tplaylists\n"
-    printf "  -u LINK\tget user\n"
+    printf "  -u FILE\tget users from urls in FILE\n"
     printf "  -h\t\tshow help\n"
 }
 
@@ -455,7 +455,7 @@ do
         -v) pattern='g_vids'; func='get_v_json';;
         -m) pattern='models'; func='get_p_json';;
         -P) pattern='playlists'; func='get_P_json';;
-        -u) get_u_json "$2" > "$(sha256sum <<< "$2")"; exit;;
+        -u) pattern="$(realpath "$2")"; func='get_u_json'; shift;;
         -h) usage; exit 0;;
         -*) printf '%s: invalid argument -- %s\n' "$(basename "$0")" "$1" >&2; exit 1;;
         *) dir="$1";;
@@ -468,6 +468,21 @@ cd "$dir" || exit 1
 
 cookie_t="$(mktemp)"
 trap 'rm "$cookie_t"; exit' EXIT
+
+if [ "$func" = "get_u_json" ]
+then
+    [ -f "$pattern" ] || { printf '%s: "%s" is not a file\n' "$arg0" "$pattern" >&2; exit 1; }
+    while read -r c
+    do
+        [ "$(jobs | wc -l)" -gt "$threads" ] && wait %%
+        out="$(sha256sum <<< "$c")"
+        out="${out%  *}"
+        [ -e "$out" ] && continue
+        echo "$c"
+        get_u_json "$c" > "$out" &
+    done < "$pattern"
+    exit
+fi
 
 for i in $(ucurl 'https://www.pornhub.com/sitemaps.xml' | hgrep 'loc @m"/sitemap_'"$pattern"'[0-9]*\.xml" @p"%i\n"')
 do
