@@ -166,7 +166,7 @@ get_channels() {
 }
 
 get_pornstars() { #jq_channels
-    echo 'hgrep -F '\''a +data-mxptype=Pornstar +data-mxptext +href @M"<img" @p"%(href)a\"%(data-mxptext)a\t"'\'' <<< "$t"' | pages_button "$@" #link name
+    echo 'hgrep -F '\''li; a .js-mxp @p"%(href)a\"%i\t"'\'' <<< "$t"' | pages_button "$@" #link name
 }
 
 get_gifphotos() {
@@ -355,7 +355,8 @@ get_p_json() {
 }
 
 get_u_json() {
-    local -r t="$(ucurl -c "$cookie_t" "$1" | tr -d '\n\t\r\a')"
+    local -r link="${1%/}"
+    local -r t="$(ucurl -c "$cookie_t" "$link" | tr -d '\n\t\r\a')"
     local _tmp1 t2
     {
     echo "${1#https://www.pornhub.com/}" #id
@@ -373,7 +374,7 @@ get_u_json() {
         mapfile -t -d '`' a <<< "$i"
         if [ -n "$(hgrep 'div +class=sectionTitle; a +href=".*/'"${a[0]}"'" @M"seeAll" @p"%l\n"' <<< "$t")" ]
         then
-            echo "$(get_${a[1]} "$1/${a[2]}" "${a[3]}")"
+            echo "$(get_${a[1]} "$link/${a[2]}" "${a[3]}")"
         else
             echo
         fi
@@ -382,13 +383,13 @@ get_u_json() {
     t2="$(hgrep 'li +id="\(pornstar\|profile\)Photos" @m"\(GIFs\|Photos\)"; .* @M"<"' <<< "$t")"
     if [ -n "$t2" ]
     then
-        echo "$(grep -q 'GIFs' <<< "$t2" && get_gifphotos "$1/gifs")"
-        echo "$(grep -q 'Photos' <<< "$t2" && get_gifphotos "$1/photos")"
+        echo "$(grep -q 'GIFs' <<< "$t2" && get_gifphotos "$link/gifs")"
+        echo "$(grep -q 'Photos' <<< "$t2" && get_gifphotos "$link/photos")"
     else
         printf '\n\n'
     fi #gifs photos
 
-    echo "$(get_videos "$1/videos")" #videos
+    echo "$(get_videos "$link/videos")" #videos
 
     } | jq -RnMc '
         .["id"]=input |
@@ -413,8 +414,8 @@ get_P_json() {
     local _tmp1 _tmp2 _tmp3
     {
     sed -n '/^        PLAYLIST_VIEW = {/{ s/^        PLAYLIST_VIEW = //; s/;$//; p;q}' <<< "$t" | jq -r '(.description | split("\n") | join("\t")) as $l | "\(.title)\n\($l)\n\(.user_id)\n\(.id)\n\(.date_added)\n\(.date_updated)\n\(.favorite_count)"' #title #desc #userid #id #added #updated #fav_count
-    echo "$(hgrep 'div +id=js-aboutPlaylistTabView; div +class="usernameWrap\( .*\)*"; a +href @p"%(href)a\n"' <<< "$t")" #author
-    echo "$(hgrep 'div +id=js-aboutPlaylistTabView; div +class="usernameWrap\( .*\)*"; a @p"%i\n"' <<< "$t")" #author_link
+    echo "$(hgrep 'div +id=js-aboutPlaylistTabView; div +class="usernameWrap\( .*\)*"; a @p"%i\n"' <<< "$t")" #author
+    echo "$(hgrep 'div +id=js-aboutPlaylistTabView; div +class="usernameWrap\( .*\)*"; a +href @p"%(href)a\n"' <<< "$t")" #author_link
     _tmp1="$(hgrep 'div +class="views"; span +class="count" @p"%i\n"' <<< "$t")"
     echo "${_tmp1//,/}" #views
     echo "$(hgrep 'div +class="votes-count-container"; span +class="votesUp" @p"%i\n"' <<< "$t")" #likes
@@ -501,3 +502,9 @@ do
         "$func" "$j" > "$rn" &
     done
 done
+
+#tr -d '\0'
+#jq -r '.comments[].user_link' pornhub-videos.json | grep '/users/'
+#jq -r '.author_link' pornhub-playlists.json | grep '/users/'
+#jq -r  '.subscribers[].link , .subscriptions[].link , .friends[].link  , .comments[].user_link' pornhub-models.json pornhub-pornstars.json | grep '/users/'
+#sed -i 's#^#https://www.pornhub.com#' pornhub-userlist
