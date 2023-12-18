@@ -76,20 +76,20 @@ get_comments() {
     t="$(hgrep 'div +id="cmtContent" @p"%i\n"' < /dev/stdin)"
 
     {
-    hgrep -F 'div +class="topCommentBlock clearfix" @p "%l%A,\n"' <<< "$t"
+    hgrep -F 'div +class="topCommentBlock clearfix" @p "%l%t,\n"' <<< "$t"
 
     while :
     do
         for i in $(hgrep 'button +data-ajax-url +data-page-num +data-comment-key @p"https://pornhub.com%(data-ajax-url)a\n"' <<< "$t" | sed 's/&amp;/\&/g')
         do
-            ucurl -L -b "$cookie_t" "$i" | tr -d '\t\n\r' | hgrep 'div +class="topCommentBlock clearfix" @p "%l%A'"$(sed 's/.*&commentId=//;s/&.*//' <<< "$i")"'\n"' | sed '1,2d'
+            ucurl -L -b "$cookie_t" "$i" | tr -d '\t\n\r' | hgrep 'div +class="topCommentBlock clearfix" @p "%l%t'"$(sed 's/.*&commentId=//;s/&.*//' <<< "$i")"'\n"' | sed '1,2d'
         done
         url="$(hgrep 'button +data-ajax-url +data-page-num -data-comment-key @p"https://pornhub.com%(data-ajax-url)a\n"' <<< "$t" | sed 's/&amp;/\&/g')"
         [ -z "$url" ] && break
         page="$(hgrep 'button +data-ajax-url +data-page-num -data-comment-key @p"%(data-page-num)a\n"' <<< "$t")"
         url="$url&page=$((++page))&isLoadMoreAjax=1"
         t="$(ucurl -L -b "$cookie_t" "$url" | tr -d '\t\n\r')"
-        hgrep 'div +class="topCommentBlock clearfix" @p "%l%A,\n"' <<< "$t"
+        hgrep 'div +class="topCommentBlock clearfix" @p "%l%t,\n"' <<< "$t"
     done
     } | sed '/<div class="date">\[\[dateAdd\]\]<\/div>/d; s/^[0-2][^0-9]/false\t\t~~\t\t/;
     s/^[3-9][0-9]*/true\t\t~~\t\t/;
