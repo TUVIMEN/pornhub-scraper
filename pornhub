@@ -73,23 +73,23 @@ get_comments() {
     local t url page view_responses='-data-comment-key'
     [ "$NOCOMMENTS" -eq '1' ] && { echo; return; }
 
-    t="$(hgrep 'div +id="cmtContent" @p"%i\n"' < /dev/stdin)"
+    t="$(hgrep 'div +id="cmtContent" | "%i\n"' < /dev/stdin)"
 
     {
-    hgrep -F 'div +class="topCommentBlock clearfix" @p "%l%t,\n"' <<< "$t"
+    hgrep -F 'div +class="topCommentBlock clearfix" |  "%l%t,\n"' <<< "$t"
 
     while :
     do
-        for i in $(hgrep 'button +data-ajax-url +data-page-num +data-comment-key @p"https://pornhub.com%(data-ajax-url)a\n"' <<< "$t" | sed 's/&amp;/\&/g')
+        for i in $(hgrep 'button +data-ajax-url +data-page-num +data-comment-key | "https://pornhub.com%(data-ajax-url)a\n"' <<< "$t" | sed 's/&amp;/\&/g')
         do
-            ucurl -L -b "$cookie_t" "$i" | tr -d '\t\n\r' | hgrep 'div +class="topCommentBlock clearfix" @p "%l%t'"$(sed 's/.*&commentId=//;s/&.*//' <<< "$i")"'\n"' | sed '1,2d'
+            ucurl -L -b "$cookie_t" "$i" | tr -d '\t\n\r' | hgrep 'div +class="topCommentBlock clearfix" |  "%l%t'"$(sed 's/.*&commentId=//;s/&.*//' <<< "$i")"'\n"' | sed '1,2d'
         done
-        url="$(hgrep 'button +data-ajax-url +data-page-num -data-comment-key @p"https://pornhub.com%(data-ajax-url)a\n"' <<< "$t" | sed 's/&amp;/\&/g')"
+        url="$(hgrep 'button +data-ajax-url +data-page-num -data-comment-key | "https://pornhub.com%(data-ajax-url)a\n"' <<< "$t" | sed 's/&amp;/\&/g')"
         [ -z "$url" ] && break
-        page="$(hgrep 'button +data-ajax-url +data-page-num -data-comment-key @p"%(data-page-num)a\n"' <<< "$t")"
+        page="$(hgrep 'button +data-ajax-url +data-page-num -data-comment-key | "%(data-page-num)a\n"' <<< "$t")"
         url="$url&page=$((++page))&isLoadMoreAjax=1"
         t="$(ucurl -L -b "$cookie_t" "$url" | tr -d '\t\n\r')"
-        hgrep 'div +class="topCommentBlock clearfix" @p "%l%t,\n"' <<< "$t"
+        hgrep 'div +class="topCommentBlock clearfix" |  "%l%t,\n"' <<< "$t"
     done
     } | sed '/<div class="date">\[\[dateAdd\]\]<\/div>/d; s/^[0-2][^0-9]/false\t\t~~\t\t/;
     s/^[3-9][0-9]*/true\t\t~~\t\t/;
@@ -137,17 +137,17 @@ get_comments() {
 }
 
 get_achievements() {
-    ucurl -b "$cookie_t" "$1" | tr -d '\n\t\r' | hgrep 'ul +class="achievementsUl"; div +class=achievementTitle; .* @M"<" @p"%i\t"' < /dev/stdin
+    ucurl -b "$cookie_t" "$1" | tr -d '\n\t\r' | hgrep 'ul +class="achievementsUl"; div +class=achievementTitle; .* @M"<" | "%i\t"' < /dev/stdin
 }
 
 pages_button() {
     local last current='1' t="$(ucurl "$1" | tr -d '\n\t\r')" sort command="$(</dev/stdin)"
-    last="$(hgrep 'button +id=moreDataBtn +onclick @p"%(onclick)a\n"' <<< "$t" | sed "s/.*('[^']*', '//;s/',.*//")"
+    last="$(hgrep 'button +id=moreDataBtn +onclick | "%(onclick)a\n"' <<< "$t" | sed "s/.*('[^']*', '//;s/',.*//")"
     [ -z "$last" ] && last='1'
 
     [ "$#" -gt '2' ] && sort="o=$3&"
     
-    t="$(hgrep -F 'ul +id=moreData @p"%i\n"' <<< "$t")"
+    t="$(hgrep -F 'ul +id=moreData | "%i\n"' <<< "$t")"
     while :
     do
         eval "$command"
@@ -158,31 +158,31 @@ pages_button() {
 }
 
 get_users() {
-    echo 'paste -d '\''"'\'' <(hgrep -F '\''div +data-type=user +data-userid @m"class=\"usernameLink\"" @p"%(data-userid)a\n"'\'' <<< "$t") <(hgrep -F '\''a +class="usernameLink" +title @p"%(title)a\n"'\'' <<< "$t") <(hgrep -F '\''a +class="usernameLink" +href @p"%(href)a\n"'\'' <<< "$t") ' | pages_button "$@" | paste -sd '\t' #id name link
+    echo 'paste -d '\''"'\'' <(hgrep -F '\''div +data-type=user +data-userid @m"class=\"usernameLink\"" | "%(data-userid)a\n"'\'' <<< "$t") <(hgrep -F '\''a +class="usernameLink" +title | "%(title)a\n"'\'' <<< "$t") <(hgrep -F '\''a +class="usernameLink" +href | "%(href)a\n"'\'' <<< "$t") ' | pages_button "$@" | paste -sd '\t' #id name link
 }
 
 get_channels() {
-    echo 'hgrep -F '\''div +class=wtitle; a +href @p"%(href)a\"%i\t"'\'' <<< "$t"' | pages_button "$@" #link name
+    echo 'hgrep -F '\''div +class=wtitle; a +href | "%(href)a\"%i\t"'\'' <<< "$t"' | pages_button "$@" #link name
 }
 
 get_pornstars() { #jq_channels
-    echo 'hgrep -F '\''li; a .js-mxp @p"%(href)a\"%i\t"'\'' <<< "$t"' | pages_button "$@" #link name
+    echo 'hgrep -F '\''li; a .js-mxp | "%(href)a\"%i\t"'\'' <<< "$t"' | pages_button "$@" #link name
 }
 
 get_gifphotos() {
-    for i in $(ucurl -b "$cookie_t" "$1" | tr -d '\n\t\r' | hgrep 'div +class="section_header\( .*\)*"; a -class="seeAllButton\( .*\)*" +href=".*" @p"https://www.pornhub.com%(href)a\n"')
+    for i in $(ucurl -b "$cookie_t" "$1" | tr -d '\n\t\r' | hgrep 'div +class="section_header\( .*\)*"; a -class="seeAllButton\( .*\)*" +href=".*" | "https://www.pornhub.com%(href)a\n"')
     do
         printf '%s"' "$(sed 's/.*\///' <<< "$i")"
-        echo 'sed '\''s#/gif/#g#g;s#/photo/#p#g;s#/album/#a#g'\'' <<< "$t" | hgrep -F '\''li +id; a +href @p"%(href)a,"'\''' | pages_button "$i"
+        echo 'sed '\''s#/gif/#g#g;s#/photo/#p#g;s#/album/#a#g'\'' <<< "$t" | hgrep -F '\''li +id; a +href | "%(href)a,"'\''' | pages_button "$i"
         echo
     done | paste -sd '\t'
 }
 
 get_videos() { #jq_gifphotos
-    for i in $(ucurl -b "$cookie_t" "$1" | tr -d '\n\t\r' | hgrep 'div +class="section_header\( .*\)*"; a -class="seeAllButton\( .*\)*" -data-title +href=".*" @p"https://www.pornhub.com%(href)a\n"')
+    for i in $(ucurl -b "$cookie_t" "$1" | tr -d '\n\t\r' | hgrep 'div +class="section_header\( .*\)*"; a -class="seeAllButton\( .*\)*" -data-title +href=".*" | "https://www.pornhub.com%(href)a\n"')
     do
         printf '%s"' "$(sed 's/.*\///' <<< "$i")"
-        echo 'sed '\''s/\/view_video.php?viewkey=//g'\'' <<< "$t" | hgrep -F '\''li +id; .* +class="title"; a +title +href @p"%(href)a,"'\''' | pages_button "$i"
+        echo 'sed '\''s/\/view_video.php?viewkey=//g'\'' <<< "$t" | hgrep -F '\''li +id; .* +class="title"; a +title +href | "%(href)a,"'\''' | pages_button "$i"
         echo
     done | paste -sd '\t'
 }
@@ -193,9 +193,9 @@ get_costars() { #jq_costars
     while :
     do
         t="$(ucurl -b "$cookie_t" "$next" | tr -d '\n\t\r')"
-        hgrep 'a +data-mxptype=Pornstar +data-mxptext +href @M"<img" @p"%(href)a\"%(data-mxptext)a\t"' <<< "$t" #link name
+        hgrep 'a +data-mxptype=Pornstar +data-mxptext +href @M"<img" | "%(href)a\"%(data-mxptext)a\t"' <<< "$t" #link name
 
-        next="$(hgrep 'li +class="page_next\( .*\)*"; a +href @p"https://www.pornhub.com%(href)a\n"' <<< "$t")"
+        next="$(hgrep 'li +class="page_next\( .*\)*"; a +href | "https://www.pornhub.com%(href)a\n"' <<< "$t")"
         [ -z "$next" ] && exit
     done
 }
@@ -208,18 +208,18 @@ get_v_json() {
     #featured on
     {
     echo "${1##*viewkey=}" #id
-    hgrep 'script +type="application/ld+json" @p"%i"' <<< "$t" | jq -r '"\(.uploadDate)\n\(.author)\n\(.interactionStatistic[0].userInteractionCount | sub(",";"";"g"))\n\(.interactionStatistic[1].userInteractionCount | sub(",";"";"g"))"' #date author views likes
-    echo "$(hgrep 'span +class="votesDown" +data-rating @p"%(data-rating)a\n"' <<< "$t")" #dlikes
-    echo "$(hgrep 'div +class=userInfo; a +class=bolded +href @p"%(href)a\n"' <<< "$t")" #author_link
-    echo "$(hgrep 'div +class=userInfo; div +data-userid @p"%(data-userid)a\n"' <<< "$t")" #author_userid
-    hgrep 'script @p"%i\n"' <<< "$t2" | sed -n '/var flashvars_[0-9]\+ = {/{s/.*var flashvars_[0-9]\+ = //; s/;$//; p;q}' | jq -r '"\(.video_duration)\n\(.actionTags)\n\(.image_url)\n\(.video_title)\n\(.hotspots)\n\(.defaultQuality)\n\(.thumbs)"' #duration actions thumbnail title hotspots qualities timelines
-    _tmp1="$(hgrep 'span +class="favoritesCounter" @p"%i\n"' <<< "$t")"
+    hgrep 'script +type="application/ld+json" | "%i"' <<< "$t" | jq -r '"\(.uploadDate)\n\(.author)\n\(.interactionStatistic[0].userInteractionCount | sub(",";"";"g"))\n\(.interactionStatistic[1].userInteractionCount | sub(",";"";"g"))"' #date author views likes
+    echo "$(hgrep 'span +class="votesDown" +data-rating | "%(data-rating)a\n"' <<< "$t")" #dlikes
+    echo "$(hgrep 'div +class=userInfo; a +class=bolded +href | "%(href)a\n"' <<< "$t")" #author_link
+    echo "$(hgrep 'div +class=userInfo; div +data-userid | "%(data-userid)a\n"' <<< "$t")" #author_userid
+    hgrep 'script | "%i\n"' <<< "$t2" | sed -n '/var flashvars_[0-9]\+ = {/{s/.*var flashvars_[0-9]\+ = //; s/;$//; p;q}' | jq -r '"\(.video_duration)\n\(.actionTags)\n\(.image_url)\n\(.video_title)\n\(.hotspots)\n\(.defaultQuality)\n\(.thumbs)"' #duration actions thumbnail title hotspots qualities timelines
+    _tmp1="$(hgrep 'span +class="favoritesCounter" | "%i\n"' <<< "$t")"
     echo "${_tmp1//[^\.0-9A-Za-z]/}" #fav_count
-    echo "$(hgrep 'a +class="\(.* \)*pstar-list-btn\( .*\)*" +href @p"%(href)a\n"' <<< "$t" | sed ':x;$!{N;s/\n/\t/;bx}')" #cast
-    echo "$(hgrep 'div +class="categoriesWrapper"; a +class="\(.* \)*item\( .*\)*" @p"%i\n"' <<< "$t" | sed ':x;$!{N;s/\n/\t/;bx}')" #categories
-    echo "$(hgrep 'div +class="tagsWrapper"; a +class="\(.* \)*item\( .*\)*" @p"%i\n"' <<< "$t" | sed ':x;$!{N;s/\n/\t/;bx}')" #tags
-    echo "$(hgrep 'div +class="relatedSearchTermsContainer"; a +class="\(.* \)*relatedSearchTermsSuggestion\( .*\)*" @p"%i\n"' <<< "$t" | sed ':x;s/  *//g;/^$/d;$!{N;s/\n/\t/;bx};')" #attributes
-    echo "$(hgrep 'div +class="productionWrapper"; a +class="\(.* \)*item\( .*\)*" @p"%i\n"' <<< "$t" | sed ':x;$!{N;s/\n/\t/;bx}')" #production
+    echo "$(hgrep 'a +class="\(.* \)*pstar-list-btn\( .*\)*" +href | "%(href)a\n"' <<< "$t" | sed ':x;$!{N;s/\n/\t/;bx}')" #cast
+    echo "$(hgrep 'div +class="categoriesWrapper"; a +class="\(.* \)*item\( .*\)*" | "%i\n"' <<< "$t" | sed ':x;$!{N;s/\n/\t/;bx}')" #categories
+    echo "$(hgrep 'div +class="tagsWrapper"; a +class="\(.* \)*item\( .*\)*" | "%i\n"' <<< "$t" | sed ':x;$!{N;s/\n/\t/;bx}')" #tags
+    echo "$(hgrep 'div +class="relatedSearchTermsContainer"; a +class="\(.* \)*relatedSearchTermsSuggestion\( .*\)*" | "%i\n"' <<< "$t" | sed ':x;s/  *//g;/^$/d;$!{N;s/\n/\t/;bx};')" #attributes
+    echo "$(hgrep 'div +class="productionWrapper"; a +class="\(.* \)*item\( .*\)*" | "%i\n"' <<< "$t" | sed ':x;$!{N;s/\n/\t/;bx}')" #production
     echo "$(get_comments <<< "$t")" #comments
     } | jq -RnMcs '
         (inputs | split("\n"))[:-1] as $lines |
@@ -257,7 +257,7 @@ get_p_json() {
     local _tmp1 t2
     {
     echo "${1#https://www.pornhub.com/}" #id
-    _tmp1="$(hgrep 'div +class="\(.* \)*name\( .*\)*"; h1 @p "%i\n"' <<< "$t")"
+    _tmp1="$(hgrep 'div +class="\(.* \)*name\( .*\)*"; h1 |  "%i\n"' <<< "$t")"
     echo "${_tmp1// /}" #name
     if [ -n "$(hgrep 'div +class="badge-username"; i +class="verifiedIcon"' <<< "$t")" ]
     then
@@ -271,33 +271,33 @@ get_p_json() {
     else
         echo 'false'
     fi #winner
-    echo "$(hgrep 'img +id="coverPictureDefault" @p"%(src)a\n"' <<< "$t")" #cover
-    _tmp1="$(hgrep 'img +id="getAvatar" @p"%(src)a\n"' <<< "$t")"
-    [ -z "$_tmp1" ] && _tmp1="$(hgrep 'div +class="thumbImage"; img +src @p"%(src)a\n"' <<< "$t")"
+    echo "$(hgrep 'img +id="coverPictureDefault" | "%(src)a\n"' <<< "$t")" #cover
+    _tmp1="$(hgrep 'img +id="getAvatar" | "%(src)a\n"' <<< "$t")"
+    [ -z "$_tmp1" ] && _tmp1="$(hgrep 'div +class="thumbImage"; img +src | "%(src)a\n"' <<< "$t")"
     echo "$_tmp1" #avatar
-    _tmp1="$(hgrep 'div +class=".*videoViews.*" +data-title @p"%(data-title)a\n"' <<< "$t")"
+    _tmp1="$(hgrep 'div +class=".*videoViews.*" +data-title | "%(data-title)a\n"' <<< "$t")"
     echo "${_tmp1//[^0-9]/}" #views
-    _tmp1="$(hgrep 'div  +data-title="Subscribers: .*" @p"%(data-title)a\n"' <<< "$t")"
-    [ -z "$_tmp1" ] && _tmp1="$(hgrep 'div +class="infoBox"; span -class @m"[0-9]" @p"%i\n"' <<< "$t")"
+    _tmp1="$(hgrep 'div  +data-title="Subscribers: .*" | "%(data-title)a\n"' <<< "$t")"
+    [ -z "$_tmp1" ] && _tmp1="$(hgrep 'div +class="infoBox"; span -class @m"[0-9]" | "%i\n"' <<< "$t")"
     echo "${_tmp1//[^0-9]/}" #subscribers_count
-    echo "$(hgrep 'div +class="rankingInfo"; span +class="big" @p"%i\n"' <<< "$t" | sed 's/ //g; s/<[^>]*>//g')" #current_rank #weekly_rank #monthly_rank #last_month_rank #yearly_rank
-    echo "$(hgrep 'div +class="infoPiece" @p"%i\n"' <<< "$t" | sed 's/<[^>]*>/\n/g; s/  */ /g' | sed 's/^ *//; s/ *$//; /^$/d' | sed ':x; $!{N;s/:\n/\a/; s/  */ /g; N; s/\n/\t/; bx}')" #info_pieces
-    echo "$(hgrep 'ul +class="\(.* \)*socialList\( .*\)*"; a +href @p"%(href)a\t"' <<< "$t")" #social
-    _tmp1="$(hgrep 'div +itemprop="description" @p"%i\n"' <<< "$t")"
-    [ -z "$_tmp1" ] && _tmp1="$(hgrep 'div +class="text longBio js-bioText" @p"%i\n"' <<< "$t")"
-    [ -z "$_tmp1" ] && _tmp1="$(hgrep 'div +class="content .*"; div -class @p"%i\n"' <<< "$t")"
+    echo "$(hgrep 'div +class="rankingInfo"; span +class="big" | "%i\n"' <<< "$t" | sed 's/ //g; s/<[^>]*>//g')" #current_rank #weekly_rank #monthly_rank #last_month_rank #yearly_rank
+    echo "$(hgrep 'div +class="infoPiece" | "%i\n"' <<< "$t" | sed 's/<[^>]*>/\n/g; s/  */ /g' | sed 's/^ *//; s/ *$//; /^$/d' | sed ':x; $!{N;s/:\n/\a/; s/  */ /g; N; s/\n/\t/; bx}')" #info_pieces
+    echo "$(hgrep 'ul +class="\(.* \)*socialList\( .*\)*"; a +href | "%(href)a\t"' <<< "$t")" #social
+    _tmp1="$(hgrep 'div +itemprop="description" | "%i\n"' <<< "$t")"
+    [ -z "$_tmp1" ] && _tmp1="$(hgrep 'div +class="text longBio js-bioText" | "%i\n"' <<< "$t")"
+    [ -z "$_tmp1" ] && _tmp1="$(hgrep 'div +class="content .*"; div -class | "%i\n"' <<< "$t")"
     echo "$(tr '\n' '\t' <<< "$_tmp1" | sed 's/<\/div>.*//')" #desc
-    echo "$(hgrep 'div +class="featuredIn"; a +href @p"%(href)a\t"' <<< "$t")" #featured
+    echo "$(hgrep 'div +class="featuredIn"; a +href | "%(href)a\t"' <<< "$t")" #featured
 
     t2="$(ucurl -b "$cookie_t" "$1/about" | tr -d '\n\t\r')"
-    if [ -n "$(hgrep 'li +id="\(pornstar\|profile\)About" @p"%l\n"' <<< "$t")" ]
+    if [ -n "$(hgrep 'li +id="\(pornstar\|profile\)About" | "%l\n"' <<< "$t")" ]
     then
         local a
 
         for i in 'achievements`achievements`all-achievements``' 'subscribers`users`subscribers`recent_subscribers`' 'subscriptions`users`subscriptions`recent_subscribers`' 'pornstar-subscriptions`pornstars`pornstar-subscriptions`recent_subscribers`' 'channel-subscriptions`channels``recent_subscribers`' 'friends`users`friends`recent_friendships`' 'costars`costars`costars``'
         do
             mapfile -t -d '`' a <<< "$i"
-            if [ "$NOSOCIAL" -ne "1" -a -n "$(hgrep 'div +class=sectionHeader; a -class=seeAll +href=".*/'"${a[0]}"'" @p"%l\n"' <<< "$t2")" ]
+            if [ "$NOSOCIAL" -ne "1" -a -n "$(hgrep 'div +class=sectionHeader; a -class=seeAll +href=".*/'"${a[0]}"'" | "%l\n"' <<< "$t2")" ]
             then
                 echo "$(get_${a[1]} "$1/${a[2]}" "${a[3]}")"
             else
@@ -317,7 +317,7 @@ get_p_json() {
         printf '\n\n'
     fi #gifs photos
 
-    if [ "$NOCOMMENTS" -ne '1' -a -n "$(hgrep 'li +id="\(pornstar\|profile\)Photos" @m">Comments<" @p"%l\n"' <<< "$t")" ]
+    if [ "$NOCOMMENTS" -ne '1' -a -n "$(hgrep 'li +id="\(pornstar\|profile\)Photos" @m">Comments<" | "%l\n"' <<< "$t")" ]
     then
         echo "$(ucurl -b "$cookie_t" "$1/comments" | tr -d '\n\t\r' | get_comments)"
     else
@@ -360,19 +360,19 @@ get_u_json() {
     local _tmp1 t2
     {
     echo "${1#https://www.pornhub.com/}" #id
-    echo "$(hgrep 'div +class=profileUserName; a +title @p"%(title)a\n"' <<< "$t")" #name
-    echo "$(hgrep 'img +id="coverPictureDefault" @p"%(src)a\n"' <<< "$t")" #cover
-    _tmp1="$(hgrep 'img +id="getAvatar" @p"%(src)a\n"' <<< "$t")"
-    [ -z "$_tmp1" ] && _tmp1="$(hgrep 'div +class="thumbImage"; img +src @p"%(src)a\n"' <<< "$t")"
+    echo "$(hgrep 'div +class=profileUserName; a +title | "%(title)a\n"' <<< "$t")" #name
+    echo "$(hgrep 'img +id="coverPictureDefault" | "%(src)a\n"' <<< "$t")" #cover
+    _tmp1="$(hgrep 'img +id="getAvatar" | "%(src)a\n"' <<< "$t")"
+    [ -z "$_tmp1" ] && _tmp1="$(hgrep 'div +class="thumbImage"; img +src | "%(src)a\n"' <<< "$t")"
     echo "$_tmp1" #avatar
-    echo "$(hgrep 'div +class=profileInfo; d[td] @p"%i\n"' <<< "$t" | sed ':x; N;s/:\n/\a/; $!{N;s/\n/\t/;bx}')" #info_pieces
-    echo "$(hgrep 'div +class=profileInfo; p @p"%i\n"' <<< "$t")" #desc
+    echo "$(hgrep 'div +class=profileInfo; d[td] | "%i\n"' <<< "$t" | sed ':x; N;s/:\n/\a/; $!{N;s/\n/\t/;bx}')" #info_pieces
+    echo "$(hgrep 'div +class=profileInfo; p | "%i\n"' <<< "$t")" #desc
 
     local -a a
     for i in 'myachievements`achievements`achievements``' 'subscribers`users`subscribers`recent_subscribers`' 'subscriptions`users`subscriptions`recent_subscribers`' 'pornstar_subscriptions`pornstars`pornstar_subscriptions`recent_subscribers`' 'channel_subscriptions`channels`channel_subscriptions``' 'friends`users`friends`recent_friendships`'
     do
         mapfile -t -d '`' a <<< "$i"
-        if [ -n "$(hgrep 'div +class=sectionTitle; a +href=".*/'"${a[0]}"'" @M"seeAll" @p"%l\n"' <<< "$t")" ]
+        if [ -n "$(hgrep 'div +class=sectionTitle; a +href=".*/'"${a[0]}"'" @M"seeAll" | "%l\n"' <<< "$t")" ]
         then
             echo "$(get_${a[1]} "$link/${a[2]}" "${a[3]}")"
         else
@@ -414,19 +414,19 @@ get_P_json() {
     local _tmp1 _tmp2 _tmp3
     {
     sed -n '/^        PLAYLIST_VIEW = {/{ s/^        PLAYLIST_VIEW = //; s/;$//; p;q}' <<< "$t" | jq -r '(.description | split("\n") | join("\t")) as $l | "\(.title)\n\($l)\n\(.user_id)\n\(.id)\n\(.date_added)\n\(.date_updated)\n\(.favorite_count)"' #title #desc #userid #id #added #updated #fav_count
-    echo "$(hgrep 'div +id=js-aboutPlaylistTabView; div +class="usernameWrap\( .*\)*"; a @p"%i\n"' <<< "$t")" #author
-    echo "$(hgrep 'div +id=js-aboutPlaylistTabView; div +class="usernameWrap\( .*\)*"; a +href @p"%(href)a\n"' <<< "$t")" #author_link
-    _tmp1="$(hgrep 'div +class="views"; span +class="count" @p"%i\n"' <<< "$t")"
+    echo "$(hgrep 'div +id=js-aboutPlaylistTabView; div +class="usernameWrap\( .*\)*"; a | "%i\n"' <<< "$t")" #author
+    echo "$(hgrep 'div +id=js-aboutPlaylistTabView; div +class="usernameWrap\( .*\)*"; a +href | "%(href)a\n"' <<< "$t")" #author_link
+    _tmp1="$(hgrep 'div +class="views"; span +class="count" | "%i\n"' <<< "$t")"
     echo "${_tmp1//,/}" #views
-    echo "$(hgrep 'div +class="votes-count-container"; span +class="votesUp" @p"%i\n"' <<< "$t")" #likes
-    echo "$(hgrep 'div +class="votes-count-container"; span +class="votesDown" @p"%i\n"' <<< "$t")" #dlikes
-    echo "$(hgrep 'div +id="tagSection"; a +class="\(.* \)*item\( .*\)*" @p "%i\n"' <<< "$t" | sed ':x; $!{N; s/\n/\t/; bx}')" #tags
+    echo "$(hgrep 'div +class="votes-count-container"; span +class="votesUp" | "%i\n"' <<< "$t")" #likes
+    echo "$(hgrep 'div +class="votes-count-container"; span +class="votesDown" | "%i\n"' <<< "$t")" #dlikes
+    echo "$(hgrep 'div +id="tagSection"; a +class="\(.* \)*item\( .*\)*" |  "%i\n"' <<< "$t" | sed ':x; $!{N; s/\n/\t/; bx}')" #tags
     _tmp2="$(sed -n '/^        var itemsCount = /{s/^.* = //;s/ .*//;p;q}' <<< "$t")"
     _tmp1="$(sed -n '/^        var lazyloadUrl = /{s/^        var lazyloadUrl = "/https:\/\/pornhub\.com/; s/";$//; p;q}' <<< "$t")"
-    hgrep 'ul +id="videoPlaylist"; li +data-video-vkey @p "%(data-video-vkey)a "' <<< "$t"
+    hgrep 'ul +id="videoPlaylist"; li +data-video-vkey |  "%(data-video-vkey)a "' <<< "$t"
     for ((i=2; i <= ((_tmp2-36)/40)+1; i++))
     do
-        ucurl -b "$cookie_t" "$_tmp1&page=$i" | hgrep 'li +data-video-vkey @p "%(data-video-vkey)a "'
+        ucurl -b "$cookie_t" "$_tmp1&page=$i" | hgrep 'li +data-video-vkey |  "%(data-video-vkey)a "'
     done #vids
     echo
     echo "$(tr -d '\n\r\t'  <<< "$t" | get_comments)" #comments
@@ -490,9 +490,9 @@ then
     exit
 fi
 
-for i in $(ucurl 'https://www.pornhub.com/sitemaps.xml' | hgrep 'loc @m"/sitemap_'"$pattern"'[0-9]*\.xml" @p"%i\n"')
+for i in $(ucurl 'https://www.pornhub.com/sitemaps.xml' | hgrep 'loc @m"/sitemap_'"$pattern"'[0-9]*\.xml" | "%i\n"')
 do
-    for j in $(ucurl "$i" | hgrep 'loc @p"%i\n"')
+    for j in $(ucurl "$i" | hgrep 'loc | "%i\n"')
     do
         [ "$(jobs | wc -l)" -gt "$threads" ] && wait %%
         rh="$(sha256sum <<< "$j")"
@@ -502,6 +502,8 @@ do
         "$func" "$j" > "$rn" &
     done
 done
+
+wait
 
 #tr -d '\0'
 #jq -r '.comments[].user_link' pornhub-videos.json | grep '/users/'
