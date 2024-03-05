@@ -1,6 +1,6 @@
-# pornhub
+# pornhub-scraper
 
-A bash script for downloading pornhub in json.
+A bash script for scraping pornhub in json.
 
 ## Requirements
 
@@ -9,7 +9,7 @@ A bash script for downloading pornhub in json.
 
 ## Installation
 
-    install -m 755 pornhub /usr/bin
+    install -m 755 pornhub-scraper /usr/bin
 
 ## Json format
 
@@ -17,7 +17,7 @@ Here's example of [pornstar](pornstar-example.json), [video](video-example.json)
 
 ## Usage
 
-    pornhub [OPTION] [DIR]
+    pornhub-scraper [OPTION] [DIR]
 
 The script gets links from sitemap and downloads specified pages (4 in parallel). Files are named by sha256sum of their urls.
 
@@ -25,24 +25,24 @@ It's recommended that you use -S option to save time.
 
 Download pornstars into DIR
 
-    pornhub -p DIR
+    pornhub-scraper -p DIR
 
 Download videos into current directory using 8 threads
 
-    pornhub -t 8 -v
+    pornhub-scraper -t 8 -v
 
 Download models into current directory
 
-    pornhub -m
+    pornhub-scraper -m
 
 Download playlists into DIR
 
-    pornhub -P DIR
+    pornhub-scraper -P DIR
 
 Download users from urls in FILE
 
-    pornhub -u FILE
+    pornhub-scraper -u FILE
 
 Get some help
 
-    pornhub -h
+    pornhub-scraper -h
