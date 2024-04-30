@@ -4,7 +4,7 @@ A bash script for scraping pornhub in json.
 
 ## Requirements
 
- - [hgrep](https://github.com/TUVIMEN/hgrep)
+ - [reliq](https://github.com/TUVIMEN/reliq)
  - [jq](https://github.com/stedolan/jq)
 
 ## Installation
@@ -46,3 +46,15 @@ Download users from urls in FILE
 Get some help
 
     pornhub-scraper -h
+
+## Results
+
+2022-09-15
+
+3
+
+    lzip -dc pornhub-pornstars.json | jq 'if (.info_pieces[] | .key=="Gender" and .value=="Trans Woman") then .name else null end | select(. != null)'  -r | wc -l
+
+131
+
+    lzip -dc pornhub-pornstars.json | jq 'if (.info_pieces[] | .key=="Gender" and .value=="Trans Man") then .name else null end | select(. != null)'  -r | wc -l
