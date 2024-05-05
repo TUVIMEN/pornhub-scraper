@@ -375,7 +375,6 @@ get_p_json() {
 get_u_json() {
     local -r link="${1%/}"
     local -r t="$(ucurl -c "$cookie_t" "$link" | tr -d '\n\t\r\a')"
-    echo "$t" > j6
     local _tmp1 t2
     {
     echo "${1#https://www.pornhub.com}" #link
