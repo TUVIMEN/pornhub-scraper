@@ -79,11 +79,11 @@ get_comments() {
     {
     while :
     do
-        reliq 'div .topCommentBlock |  "<el><lvl>%l</lvl>%t</el>\n"' <<< "$t"
+        reliq 'div .topCommentBlock |  "<el><lvl>%l</lvl>%C</el>\n"' <<< "$t"
         for i in $(reliq 'button data-ajax-url data-page-num data-comment-key | "https://pornhub.com%(data-ajax-url)v\n" / sed "s/&amp;/&/g"' <<< "$t")
         do
             echo "$i" >&2
-            ucurl -L -b "$cookie_t" "$i" | tr -d '\t\n\r' | reliq 'div .topCommentBlock [2:] | "<el><lvl>99</lvl>%t<forcomment>'"$(sed 's/.*&commentId=//;s/&.*//' <<< "$i")"'</forcomment></el>\n"'
+            ucurl -L -b "$cookie_t" "$i" | tr -d '\t\n\r' | reliq 'div .topCommentBlock [2:] | "<el><lvl>99</lvl>%C<forcomment>'"$(sed 's/.*&commentId=//;s/&.*//' <<< "$i")"'</forcomment></el>\n"'
         done
         url="$(reliq 'button data-ajax-url data-page-num -data-comment-key | "https://pornhub.com%(data-ajax-url)v\n" / sed "s/&amp;/&/g"' <<< "$t")"
         [ -z "$url" ] && break
