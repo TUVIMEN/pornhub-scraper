@@ -157,8 +157,8 @@ pages_button() {
     [ -z "$last" ] && last='1'
 
     [ "$#" -gt '2' ] && sort="o=$3&"
-    
-    t="$(reliq -F 'ul #moreData | "%i\n"' <<< "$t")"
+
+    t="$(reliq 'ul #moreData | "%i\n"' <<< "$t")"
     while :
     do
         eval "$command"
@@ -171,26 +171,26 @@ pages_button() {
 }
 
 get_users() {
-    echo 'paste -d '\''"'\'' <(reliq -F '\''div data-type=user data-userid m@"class=\"usernameLink\"" | "%(data-userid)v\n"'\'' <<< "$t") <(reliq -F '\''a .usernameLink title | "%(title)v\n"'\'' <<< "$t") <(reliq -F '\''a .usernameLink href | "%(href)v\n"'\'' <<< "$t") ' | pages_button "$@" | paste -sd '\t' #id name link
+    echo 'paste -d '\''"'\'' <(reliq '\''div data-type=user data-userid m@"class=\"usernameLink\"" | "%(data-userid)v\n"'\'' <<< "$t") <(reliq '\''a .usernameLink title | "%(title)v\n"'\'' <<< "$t") <(reliq '\''a .usernameLink href | "%(href)v\n"'\'' <<< "$t") ' | pages_button "$@" | paste -sd '\t' #id name link
 }
 
 get_channels() {
-    echo 'reliq -F '\''div .wtitle; a href | "%(href)v\"%i\t"'\'' <<< "$t"' | pages_button "$@" #link name
+    echo 'reliq '\''div .wtitle; a href | "%(href)v\"%i\t"'\'' <<< "$t"' | pages_button "$@" #link name
 }
 
 get_pornstars_model() { #jq_channels
-    echo 'reliq -F '\''li; a .js-mxp | "%(href)v\"%i\t"'\'' <<< "$t"' | pages_button "$@" #link name
+    echo 'reliq '\''li; a .js-mxp | "%(href)v\"%i\t"'\'' <<< "$t"' | pages_button "$@" #link name
 }
 
 get_pornstars_user() { #jq_channels
-    echo 'reliq -F '\''li; a class="" href | "%(href)v\"%i\t"'\'' <<< "$t"' | pages_button "$@" #link name
+    echo 'reliq '\''li; a class="" href | "%(href)v\"%i\t"'\'' <<< "$t"' | pages_button "$@" #link name
 }
 
 get_gifphotos() {
     for i in $(ucurl -b "$cookie_t" "$1" | tr -d '\n\t\r' | reliq 'div .section_header; a -.seeAllButton href | "https://www.pornhub.com%(href)v\n"')
     do
         printf '%s"' "$(sed 's/.*\///' <<< "$i")"
-        echo 'sed '\''s#/gif/#g#g;s#/photo/#p#g;s#/album/#a#g'\'' <<< "$t" | reliq -F '\''li id; a href | "%(href)v,"'\''' | pages_button "$i"
+        echo 'sed '\''s#/gif/#g#g;s#/photo/#p#g;s#/album/#a#g'\'' <<< "$t" | reliq '\''li id; a href | "%(href)v,"'\''' | pages_button "$i"
         echo
     done | paste -sd '\t'
 }
@@ -199,14 +199,14 @@ get_videos() { #jq_gifphotos
     for i in $(ucurl -b "$cookie_t" "$1" | tr -d '\n\t\r' | reliq 'div .section_header; a -.seeAllButton -data-title href | "https://www.pornhub.com%(href)v\n"')
     do
         printf '%s"' "$(sed 's/.*\///' <<< "$i")"
-        echo 'sed '\''s/\/view_video.php?viewkey=//g'\'' <<< "$t" | reliq -F '\''li id; * .title; a title href | "%(href)v,"'\''' | pages_button "$i"
+        echo 'sed '\''s/\/view_video.php?viewkey=//g'\'' <<< "$t" | reliq '\''li id; * .title; a title href | "%(href)v,"'\''' | pages_button "$i"
         echo
     done | paste -sd '\t'
 }
 
 get_costars() { #jq_costars
     local t next="$1"
-    
+
     while :
     do
         echo "$next" >&2
@@ -229,7 +229,7 @@ get_v_json() {
     echo "${1##*viewkey=}" #id
     reliq 'script type="application/ld+json" | "%i"' <<< "$t" | jq -r '"\(.uploadDate)\n\(.author)\n\(.interactionStatistic[0].userInteractionCount | sub(",";"";"g"))\n\(.interactionStatistic[1].userInteractionCount | sub(",";"";"g"))"' #date author views likes
     reliq 'script | "%i\n" / sed "/var flashvars_[0-9]+ = \{/{s/.*var flashvars_[0-9]+ = //; s/;$//; p;q}" "nE"' <<< "$t2" | jq -r '"\(.video_duration)\n\(.actionTags)\n\(.image_url)\n\(.video_title)\n\(.hotspots)\n\(.defaultQuality)\n\(.thumbs)"' #duration actions thumbnail title hotspots qualities timelines
-    reliq ' 
+    reliq '
         . span .votesDown data-rating | "%(data-rating)v\n",
         . div .userInfo; a .bolded href | "%(href)v\n",
         . div .userInfo; div data-userid | "%(data-userid)v\n",
@@ -417,7 +417,7 @@ get_u_json() {
         .["cover"]=input |
         .["avatar"]=input |
         .["info_pieces"]=(input | split("\t") | map(split("") | {("key"):.[0],("value"):.[1]})) |
-        .["desc"]=input | 
+        .["desc"]=input |
         .["achievements"]=(input | '"$jq_achievements"') |
         .["subscribers"]=(input | '"$jq_users"') |
         .["subscriptions"]=(input | '"$jq_users"') |
