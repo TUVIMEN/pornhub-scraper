@@ -83,7 +83,7 @@ get_comments() {
         for i in $(reliq 'button data-ajax-url data-page-num data-comment-key | "https://pornhub.com%(data-ajax-url)v\n" / sed "s/&amp;/&/g"' <<< "$t")
         do
             echo "$i" >&2
-            ucurl -L -b "$cookie_t" "$i" | tr -d '\t\n\r' | reliq 'div .topCommentBlock [2:] | "<el><lvl>99</lvl>%C<forcomment>'"$(sed 's/.*&commentId=//;s/&.*//' <<< "$i")"'</forcomment></el>\n"'
+            ucurl -L -b "$cookie_t" "$i" | tr -d '\t\n\r' | reliq 'div .topCommentBlock [2:] | "<el><lvl>99</lvl>%A<forcomment>'"$(sed 's/.*&commentId=//;s/&.*//' <<< "$i")"'</forcomment></el>\n"'
         done
         url="$(reliq 'button data-ajax-url data-page-num -data-comment-key | "https://pornhub.com%(data-ajax-url)v\n" / sed "s/&amp;/&/g"' <<< "$t")"
         [ -z "$url" ] && break
@@ -93,7 +93,7 @@ get_comments() {
         t="$(ucurl -L -b "$cookie_t" "$url" | tr -d '\t\n\r')"
     done
     } | reliq '
-        el m@v>"[[dateAdd]]" l@[0]; {
+        el i@v>"[[dateAdd]]" l@[0]; {
             . lvl | "%i\n",
             . a .userLink href | "%(href)v\n",
             . a .userLink data-userid | "%(data-userid)v\n",
@@ -171,7 +171,7 @@ pages_button() {
 }
 
 get_users() {
-    echo 'paste -d '\''"'\'' <(reliq '\''div data-type=user data-userid m@"class=\"usernameLink\"" | "%(data-userid)v\n"'\'' <<< "$t") <(reliq '\''a .usernameLink title | "%(title)v\n"'\'' <<< "$t") <(reliq '\''a .usernameLink href | "%(href)v\n"'\'' <<< "$t") ' | pages_button "$@" | paste -sd '\t' #id name link
+    echo 'paste -d '\''"'\'' <(reliq '\''div data-type=user data-userid i@"class=\"usernameLink\"" | "%(data-userid)v\n"'\'' <<< "$t") <(reliq '\''a .usernameLink title | "%(title)v\n"'\'' <<< "$t") <(reliq '\''a .usernameLink href | "%(href)v\n"'\'' <<< "$t") ' | pages_button "$@" | paste -sd '\t' #id name link
 }
 
 get_channels() {
@@ -211,7 +211,7 @@ get_costars() { #jq_costars
     do
         echo "$next" >&2
         t="$(ucurl -b "$cookie_t" "$next" | tr -d '\n\t\r')"
-        reliq 'a data-mxptype=Pornstar data-mxptext href m@v>"<img" | "%(href)v\"%(data-mxptext)v\t"' <<< "$t" #link name
+        reliq 'a data-mxptype=Pornstar data-mxptext href i@v>"<img" | "%(href)v\"%(data-mxptext)v\t"' <<< "$t" #link name
         return
 
         next="$(reliq 'li .page_next; a href | "https://www.pornhub.com%(href)v\n"' <<< "$t")"
@@ -296,7 +296,7 @@ get_p_json() {
     _tmp1="$(reliq 'div .a>videoViews data-title | "%(data-title)v\n"' <<< "$t")"
     echo "${_tmp1//[^0-9]/}" #views
     _tmp1="$(reliq 'div  data-title=b>"Subscribers: " | "%(data-title)v\n"' <<< "$t")"
-    [ -z "$_tmp1" ] && _tmp1="$(reliq 'div .infoBox; span -class m@B>"[0-9]" | "%i\n"' <<< "$t")"
+    [ -z "$_tmp1" ] && _tmp1="$(reliq 'div .infoBox; span -class i@B>"[0-9]" | "%i\n"' <<< "$t")"
     echo "${_tmp1//[^0-9]/}" #subscribers_count
     echo "$(reliq 'div .rankingInfo; span .big | "%i\n" / sed "s/ //g; s/<[^>]*>//g"' <<< "$t")" #current_rank #weekly_rank #monthly_rank #last_month_rank #yearly_rank
     echo "$(reliq 'div .infoPiece | "%i\n" / sed "s/<[^>]*>/\n/g; s/  */ /g" sed "s/^ *//; s/ *$//; /^$/d" sed ":x; $!{N;s/:\n/\a/; s/  */ /g; N; s/\n/\t/; bx}"' <<< "$t")" #info_pieces
@@ -326,7 +326,7 @@ get_p_json() {
         printf '\n\n\n\n\n\n\n'
     fi #achievements subscribers subscriptions pornstar_subscriptions channel_subscriptions friends costars
 
-    t2="$(reliq 'li #E>"(pornstar|profile)Photos" m@E>"(GIFs|Photos)"; * c@[0]' <<< "$t")"
+    t2="$(reliq 'li #E>"(pornstar|profile)Photos" i@E>"(GIFs|Photos)"; * c@[0]' <<< "$t")"
     if [ -n "$t2" ]
     then
         echo "$(grep -q 'GIFs' <<< "$t2" && get_gifphotos "$1/gifs")"
@@ -335,7 +335,7 @@ get_p_json() {
         printf '\n\n'
     fi #gifs photos
 
-    if [ "$NOCOMMENTS" -ne '1' -a -n "$(reliq 'li #E>"(pornstar|profile)Photos" m@">Comments<" | "%l\n"' <<< "$t")" ]
+    if [ "$NOCOMMENTS" -ne '1' -a -n "$(reliq 'li #E>"(pornstar|profile)Photos" i@">Comments<" | "%l\n"' <<< "$t")" ]
     then
         echo "$(ucurl -b "$cookie_t" "$1/comments" | tr -d '\n\t\r' | get_comments)"
     else
@@ -391,7 +391,7 @@ get_u_json() {
     for i in 'myachievements`achievements`achievements``' 'subscribers`users`subscribers`recent_subscribers`' 'subscriptions`users`subscriptions`recent_subscribers`' 'pornstar_subscriptions`pornstars_user`pornstar_subscriptions`recent_subscribers`' 'channel_subscriptions`channels`channel_subscriptions``' 'friends`users`friends`recent_friendships`'
     do
         mapfile -t -d '`' a <<< "$i"
-        if [ -n "$(reliq 'div .sectionTitle; a href=e>"/'"${a[0]}"'" m@v>"seeAll" | "%l\n"' <<< "$t")" ]
+        if [ -n "$(reliq 'div .sectionTitle; a href=e>"/'"${a[0]}"'" i@v>"seeAll" | "%l\n"' <<< "$t")" ]
         then
             echo "$(get_${a[1]} "$link/${a[2]}" "${a[3]}")"
         else
@@ -399,7 +399,7 @@ get_u_json() {
         fi
     done #achievements subscribers subscriptions pornstar_subscriptions channel_subscriptions friends
 
-    t2="$(reliq 'li #E>"(pornstar|profile)Photos" m@E>"(GIFs|Photos)"; * c@[0]' <<< "$t")"
+    t2="$(reliq 'li #E>"(pornstar|profile)Photos" i@E>"(GIFs|Photos)"; * c@[0]' <<< "$t")"
     if [ -n "$t2" ]
     then
         echo "$(grep -q 'GIFs' <<< "$t2" && get_gifphotos "$link/gifs")"
@@ -511,7 +511,7 @@ then
     exit
 fi
 
-for i in $(ucurl 'https://www.pornhub.com/sitemaps.xml' | reliq 'loc m@B>"/sitemap_'"$pattern"'[0-9]*\.xml" | "%i\n"')
+for i in $(ucurl 'https://www.pornhub.com/sitemaps.xml' | reliq 'loc i@B>"/sitemap_'"$pattern"'[0-9]*\.xml" | "%i\n"')
 do
     for j in $(ucurl "$i" | reliq 'loc | "%i\n"')
     do
