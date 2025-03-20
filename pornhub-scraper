@@ -494,7 +494,7 @@ done
 cd "$dir" || exit 1
 
 cookie_t="$(mktemp)"
-trap 'rm "$cookie_t"; exit' EXIT
+trap 'rm "$cookie_t"; exit' HUP INT QUIT TERM PWR EXIT RETURN
 
 if [ "$func" = "get_u_json" ]
 then
